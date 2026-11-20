@@ -54,3 +54,38 @@ def b3_f1(pred, gold):
     P /= n
     R /= n
     return 2 * P * R / (P + R) if P + R else 0.0
+
+def _lea_links(n):
+    # LEA (Moosavi & Strube, 2016): #coref links in a cluster; singleton -> 1
+    return 1 if n == 1 else n * (n - 1) / 2.0
+
+def _lea_recall(key, resp):
+    num = den = 0.0
+    for k in key:
+        k = set(k)
+        if not k:
+            continue
+        imp = len(k)
+        klinks = _lea_links(len(k))
+        common = 0.0
+        for r in resp:
+            r = set(r)
+            inter = k & r
+            if len(inter) > 1:
+                common += _lea_links(len(inter))
+            elif len(inter) == 1 and len(k) == 1 and len(r) == 1:
+                common += 1.0            # correctly-resolved singleton
+        num += imp * (common / klinks)
+        den += imp
+    return num / den if den else 0.0
+
+def lea_f1(pred, gold):
+    vp = [c for c in pred if isinstance(c, list)]
+    vg = [c for c in gold if isinstance(c, list)]
+    if not vp and not vg:
+        return 1.0
+    if not vp or not vg:
+        return 0.0
+    R = _lea_recall(vg, vp)
+    P = _lea_recall(vp, vg)
+    return 2 * P * R / (P + R) if P + R else 0.0
