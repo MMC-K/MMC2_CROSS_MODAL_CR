@@ -128,3 +128,13 @@ GPUS=1,2 RUN_DIR=outputs/run2 bash scripts/run_all.sh
 - [성능 분석서 PDF](docs/reports/coreference_performance_analysis_v1.pdf)
 - [성능 분석서 Word](docs/reports/coreference_performance_analysis_v1.docx)
 - [분석서와 저장소 실행 방법의 연결](docs/REPORT.md)
+
+# 라이선스 및 출처
+
+소프트웨어 코드는 [Apache License 2.0](LICENSE)을 따른다. KoMMERCE 데이터·K-Fashion 이미지·기반 모델과 첨부 분석서의 권리는 각각의 원출처에 있다. [NOTICE](NOTICE)와 [데이터 포맷](docs/DATA_FORMAT.md)을 참고한다.
+
+README 구성은 [기존 멀티모달 대화 상호참조 해결 저장소](https://github.com/MMC-K/multimodal_dialogue_coreference_resolution)를 참고했다. 이 저장소의 과제는 실제 이미지와 멘션 목록을 입력하는 2B 모델의 군집 예측이다.
+
+# Acknowledgement
+
+본 연구는 정부(과학기술정보통신부)의 재원으로 지원을 받아 수행된 연구입니다. (No. RS-2022-II220320, 상황인지 및 사용자 이해를 통한 인공지능 기반 1:1 복합대화 기술 개발)
