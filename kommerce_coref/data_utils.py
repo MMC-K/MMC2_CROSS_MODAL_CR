@@ -59,3 +59,15 @@ def transform(row):
     # Regenerate only from sample identity and seed; no gold membership enters the RNG.
     assert len(pool)==len(original)
     return changed,dict(old_to_new=mapping,display_original_ids=[old_ids[i] for i in display])
+
+def audit(items):
+    total=consecutive=display_adjacent=image_last=0
+    for row in items:
+        types={m['id']:m['type'] for m in row['mention_pool']}
+        positions={m['id']:i for i,m in enumerate(row['mention_pool'])}
+        for cluster in row['gold']:
+            ids=sorted(int(m[1:]) for m in cluster);pos=sorted(positions[m] for m in cluster);total+=1
+            consecutive+=ids==list(range(ids[0],ids[-1]+1))
+            display_adjacent+=pos==list(range(pos[0],pos[-1]+1))
+            image_last+=types['M'+str(ids[-1])]=='Image'
+    return dict(gold_clusters=total,contiguous_numeric_ids=consecutive,adjacent_display_positions=display_adjacent,highest_numeric_id_is_image=image_last)
