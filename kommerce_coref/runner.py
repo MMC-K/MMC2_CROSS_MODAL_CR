@@ -172,3 +172,43 @@ def train(args,rank,world,processor,base):
         barrier(world)
     if stream:stream.close()
     if rank==0:save_json(out/'training_complete.json',dict(best_epoch=best_epoch,best_dev_exact_cluster_f1=best,steps=global_step,seconds=time.time()-start))
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--mode',choices=['train','evaluate','infer'],required=True)
+    p.add_argument('--model',default=MODEL_ID);p.add_argument('--revision',default=REVISION)
+    p.add_argument('--local-files-only',action='store_true')
+    p.add_argument('--data-dir',type=Path,default=ROOT/'data');p.add_argument('--output-dir',type=Path,default=ROOT/'outputs/run1')
+    p.add_argument('--input',type=Path);p.add_argument('--adapter',type=Path);p.add_argument('--name',default='predictions')
+    p.add_argument('--epochs',type=int,default=3);p.add_argument('--micro-batch',type=int,default=16)
+    p.add_argument('--global-batch',type=int,default=32);p.add_argument('--eval-batch',type=int,default=16)
+    p.add_argument('--workers',type=int,default=4);p.add_argument('--seed',type=int,default=42)
+    p.add_argument('--lr',type=float,default=1e-4);p.add_argument('--warmup-ratio',type=float,default=.03)
+    p.add_argument('--max-new-tokens',type=int,default=512)
+    p.add_argument('--limit-train',type=int);p.add_argument('--limit-dev',type=int);p.add_argument('--limit-input',type=int)
+    args=p.parse_args();rank=int(os.environ.get('RANK','0'));world=int(os.environ.get('WORLD_SIZE','1'))
+    assert args.max_new_tokens==512 or args.mode=='infer','Evaluation/training use the recorded 512-token cap.'
+    assert args.epochs>0 and args.micro_batch>0 and args.eval_batch>0
+    args.output_dir.mkdir(parents=True,exist_ok=True)
+    if args.mode=='train':
+        assert not (args.output_dir/'config.json').exists(),'Existing training run: choose a new --output-dir.'
+    else:
+        assert args.input or args.mode=='evaluate','--input required for infer'
+        assert args.name and Path(args.name).name==args.name,'--name must be a plain filename stem'
+        assert not (args.output_dir/f'{args.name}.rank{rank}.jsonl').exists(),'Existing output: choose a new --name or --output-dir.'
+    rank,world,processor,model=initialize(args)
+    try:
+        if args.mode=='train':
+            assert args.adapter is None,'Training starts from the HF base model; --adapter is for evaluation/inference.'
+            train(args,rank,world,processor,model)
+        else:
+            items=read_rows(args.input or args.data_dir/'test.jsonl')
+            if args.limit_input:items=items[:args.limit_input]
+            if args.adapter:model=PeftModel.from_pretrained(model,args.adapter)
+            if rank==0:save_json(args.output_dir/f'{args.name}.run.json',fingerprint(args,items))
+            if args.mode=='evaluate':assert all('gold' in r for r in items),'Evaluation requires gold clusters'
+            evaluate(model,processor,items,args.output_dir,args.name,rank,world,args,has_gold=args.mode=='evaluate')
+    finally:
+        if world>1:dist.destroy_process_group()
+
+if __name__=='__main__':main()
