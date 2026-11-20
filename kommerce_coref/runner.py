@@ -83,3 +83,27 @@ def evaluate(model,processor,items,out,name,rank,world,args,has_gold=True):
     if world>1:
         box=[result];dist.broadcast_object_list(box,src=0);result=box[0]
     return result
+
+def initialize(args):
+    if not torch.cuda.is_available():raise RuntimeError('CUDA GPU required for training/inference. CPU data checking and scoring are separate scripts.')
+    rank=int(os.environ.get('RANK','0'));local=int(os.environ.get('LOCAL_RANK','0'));world=int(os.environ.get('WORLD_SIZE','1'))
+    assert world in [1,2],'Supported: one or two CUDA GPUs'
+    torch.cuda.set_device(local);torch.set_num_threads(4)
+    if world>1:
+        from datetime import timedelta
+        dist.init_process_group('nccl',timeout=timedelta(minutes=30))
+    seed_all(args.seed)
+    # Resolve the pinned repository once; load optional processor files locally too.
+    # This avoids fallback lookups on the model's moving main branch.
+    if Path(args.model).is_dir():
+        resolved_model=args.model
+    else:
+        from huggingface_hub import snapshot_download
+        resolved_model=snapshot_download(args.model,revision=args.revision,local_files_only=args.local_files_only,token=False,
+            allow_patterns=['*.safetensors','*.json','*.txt','*.model','*.jinja','LICENSE*'])
+    kw=dict(local_files_only=True)
+    processor=AutoProcessor.from_pretrained(resolved_model,min_pixels=MIN_PIXELS,max_pixels=MAX_PIXELS,**kw)
+    processor.image_processor.size={'shortest_edge':MIN_PIXELS,'longest_edge':MAX_PIXELS};processor.tokenizer.padding_side='left'
+    model=Qwen3VLForConditionalGeneration.from_pretrained(resolved_model,torch_dtype=torch.bfloat16,attn_implementation='sdpa',**kw).cuda()
+    optimize_patch_projection(model)
+    return rank,world,processor,model
