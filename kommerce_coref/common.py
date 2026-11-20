@@ -19,3 +19,14 @@ def save_json(path, obj):
 
 def seed_all(seed):
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
+
+def optimize_patch_projection(model):
+    # Each Conv3d input is exactly one non-overlapping (2,16,16) patch.
+    # Flattening its kernel gives the same linear map without slow cuDNN
+    # Conv3d algorithm initialization on this A100/CUDA installation.
+    patch = model.model.visual.patch_embed
+    def forward(self, hidden_states):
+        weight = self.proj.weight
+        flat = hidden_states.reshape(-1, weight[0].numel()).to(weight.dtype)
+        return torch.nn.functional.linear(flat, weight.flatten(1), self.proj.bias)
+    patch.forward = types.MethodType(forward, patch)
