@@ -98,3 +98,24 @@ def parse(response):
         valid=isinstance(clusters,list) and all(isinstance(c,list) and all(isinstance(m,str) for m in c) for c in clusters)
         return (clusters,True) if valid else ([],False)
     except (ValueError,TypeError,KeyError,AssertionError):return [],False
+
+def cross_links(clusters,types):
+    return {(t,i) for c in clusters for t in c for i in c if types.get(t)=='Text' and types.get(i)=='Image'}
+
+def metrics(predictions):
+    n=len(predictions);assert n
+    exact=[exact_cluster_f1(x['prediction'],x['gold']) for x in predictions]
+    primary=sum(exact)/n
+    assert abs(primary-sum(exact)/n)<1e-12
+    tp=npred=ngold=0
+    for item in predictions:
+        p=cross_links(item['prediction'],item['mention_types']);g=cross_links(item['gold'],item['mention_types'])
+        tp+=len(p&g);npred+=len(p);ngold+=len(g)
+    p=tp/npred if npred else 0;r=tp/ngold if ngold else 0
+    return dict(n=n,exact_cluster_f1=primary,b3_f1=sum(b3_f1(x['prediction'],x['gold']) for x in predictions)/n,
+                lea_f1=sum(lea_f1(x['prediction'],x['gold']) for x in predictions)/n,
+                cross_modal_link_precision=p,cross_modal_link_recall=r,cross_modal_link_f1=2*p*r/(p+r) if p+r else 0,
+                valid_json=sum(x['valid_json'] for x in predictions),empty_predictions=sum(not x['prediction'] for x in predictions),
+                gold_empty=sum(not x['gold'] for x in predictions),
+                unknown_mention_ids=sum(any(m not in x['mention_types'] for c in x['prediction'] for m in c) for x in predictions),
+                token_limit_hits=sum(x['output_tokens']>=512 for x in predictions))
