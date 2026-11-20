@@ -45,3 +45,41 @@ def fingerprint(args,items):
         adapter=dict(path=str(Path(args.adapter).resolve()),sha256=hashlib.sha256(p.read_bytes()).hexdigest())
     return dict(model=args.model,revision=args.revision,adapter=adapter,max_new_tokens=args.max_new_tokens,
                 data_sha256=hashlib.sha256(json.dumps(items,ensure_ascii=False,sort_keys=True).encode()).hexdigest())
+
+@torch.inference_mode()
+@torch.autocast('cuda',dtype=torch.bfloat16)
+def evaluate(model,processor,items,out,name,rank,world,args,has_gold=True):
+    model.eval();shard=items[rank::world];path=out/f'{name}.rank{rank}.jsonl';start=time.time()
+    assert not path.exists(),f'Existing predictions: {path}; choose a new --output-dir/--name.'
+    with path.open('w') as stream:
+        for batch in loader(shard,processor,args.eval_batch,workers=args.workers):
+            indices=batch.pop('row_indices');batch=cuda_batch(batch)
+            generated=model.generate(**batch,do_sample=False,max_new_tokens=args.max_new_tokens,use_cache=True,
+                                     pad_token_id=processor.tokenizer.pad_token_id)
+            output_ids=generated[:,batch['input_ids'].shape[1]:]
+            responses=processor.batch_decode(output_ids,skip_special_tokens=True)
+            for j,(i,response) in enumerate(zip(indices,responses)):
+                row=shard[i];prediction,valid=parse(response)
+                item={k:row[k] for k in ['sample_id','dialogue_id','task','modality']}
+                if has_gold:item['gold']=row['gold']
+                item.update(prediction=prediction,response=response,valid_json=valid,
+                            output_tokens=sum(t!=processor.tokenizer.pad_token_id for t in output_ids[j].tolist()),
+                            mention_types={m['id']:m['type'] for m in row['mention_pool']})
+                stream.write(json.dumps(item,ensure_ascii=False)+'\n')
+            stream.flush()
+    barrier(world);result=None
+    if rank==0:
+        by_id={}
+        for k in range(world):
+            for line in (out/f'{name}.rank{k}.jsonl').read_text().splitlines():
+                row=json.loads(line);assert row['sample_id'] not in by_id;by_id[row['sample_id']]=row
+        assert len(by_id)==len(items)
+        merged=[by_id[r['sample_id']] for r in items]
+        (out/f'{name}.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in merged))
+        if has_gold:
+            result=metrics(merged);save_json(out/f'{name}.metrics.json',result)
+        else:result=dict(n=len(merged),valid_json=sum(r['valid_json'] for r in merged))
+        print(json.dumps(dict(event='evaluation',name=name,seconds=round(time.time()-start,1),metrics=result)),flush=True)
+    if world>1:
+        box=[result];dist.broadcast_object_list(box,src=0);result=box[0]
+    return result
