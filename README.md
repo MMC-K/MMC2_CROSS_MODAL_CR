@@ -54,3 +54,19 @@ python scripts/download_model.py
 ```
 
 대화·정답·이미지는 저장소에 포함한다. 기반 모델과 학습된 LoRA 가중치는 포함하지 않으며, Hugging Face에서 기반 모델을 받아 학습한다. 최초 모델 다운로드에는 인터넷이 필요하다. `HF_HOME`으로 모델 캐시 위치를 지정할 수 있다.
+
+# 모델 학습
+
+```bash
+GPUS=1,2 RUN_DIR=outputs/run1 bash scripts/train.sh
+```
+
+이 명령은 LoRA 학습과 epoch별 검증을 수행한다. 검증 exact-cluster F1이 가장 높은 adapter는 `outputs/run1/best_adapter/`에 저장된다. 새 실행에는 새 RUN_DIR을 지정한다.
+
+메모리를 줄이는 예시는 다음과 같다. 전체 batch 32는 gradient accumulation으로 유지한다.
+
+```bash
+GPUS=1,2 MICRO_BATCH=2 EVAL_BATCH=2 RUN_DIR=outputs/small_batch bash scripts/train.sh
+```
+
+[학습 안내](docs/TRAINING.md)에 전체 설정, GPU 1개 실행, 소규모 학습 점검 명령을 정리했다.
