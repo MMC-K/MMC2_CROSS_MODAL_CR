@@ -107,3 +107,68 @@ def initialize(args):
     model=Qwen3VLForConditionalGeneration.from_pretrained(resolved_model,torch_dtype=torch.bfloat16,attn_implementation='sdpa',**kw).cuda()
     optimize_patch_projection(model)
     return rank,world,processor,model
+
+def train(args,rank,world,processor,base):
+    out=args.output_dir
+    train=read_rows(args.data_dir/'train.jsonl');dev=read_rows(args.data_dir/'dev.jsonl')
+    if args.limit_train:train=train[:args.limit_train]
+    if args.limit_dev:dev=dev[:args.limit_dev]
+    assert not ({r['dialogue_id'] for r in train}&{r['dialogue_id'] for r in dev})
+    assert len(train)%world==0
+    adapter=LoraConfig(r=16,lora_alpha=32,lora_dropout=.05,bias='none',task_type='CAUSAL_LM',
+                      target_modules=r'.*language_model\.layers\.\d+\.(self_attn\.(q_proj|k_proj|v_proj|o_proj)|mlp\.(gate_proj|up_proj|down_proj))')
+    model=get_peft_model(base,adapter)
+    assert all('lora_' in n and 'language_model' in n for n,p in model.named_parameters() if p.requires_grad)
+    model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant':False})
+    if world>1:model=DDP(model,device_ids=[int(os.environ['LOCAL_RANK'])],broadcast_buffers=False)
+    unwrapped=model.module if world>1 else model
+    seed_all(args.seed+rank)
+    assert args.global_batch%(world*args.micro_batch)==0
+    accumulation=args.global_batch//(world*args.micro_batch)
+    sampler=DistributedSampler(Examples(train,processor,True),num_replicas=world,rank=rank,seed=args.seed,shuffle=True,drop_last=False)
+    dl=loader(train,processor,args.micro_batch,True,sampler,args.workers)
+    steps=math.ceil(len(dl)/accumulation)
+    optimizer=torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],lr=args.lr,weight_decay=.01)
+    scheduler=get_cosine_schedule_with_warmup(optimizer,math.ceil(steps*args.epochs*args.warmup_ratio),steps*args.epochs)
+    config=dict(model=args.model,revision=args.revision,seed=args.seed,dropout_seeds=[args.seed+k for k in range(world)],
+                visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),world_size=world,train=len(train),dev=len(dev),epochs=args.epochs,
+                micro_batch=args.micro_batch,global_batch=args.global_batch,steps_per_epoch=steps,lr=args.lr,warmup_ratio=args.warmup_ratio,
+                lora_rank=16,lora_alpha=32,lora_dropout=.05,trainable_parameters=sum(p.numel() for p in model.parameters() if p.requires_grad),
+                image_min_pixels=MIN_PIXELS,image_max_pixels=MAX_PIXELS,vision_encoder='frozen',visual_merger='frozen',
+                selection='highest dev exact-cluster F1; earliest epoch on ties',max_new_tokens=args.max_new_tokens)
+    if rank==0:
+        save_json(out/'config.json',config)
+        print(json.dumps(dict(event='training_start',config=config)),flush=True)
+    best=-1;best_epoch=None;global_step=0;start=time.time()
+    stream=(out/'train_metrics.jsonl').open('w') if rank==0 else None
+    for epoch in range(1,args.epochs+1):
+        sampler.set_epoch(epoch-1);model.train();optimizer.zero_grad(set_to_none=True);loss_sum=0
+        for step,batch in enumerate(dl,1):
+            batch.pop('row_indices');batch=cuda_batch(batch)
+            group=min(accumulation,len(dl)-((step-1)//accumulation)*accumulation)
+            update=step%accumulation==0 or step==len(dl)
+            context=model.no_sync() if world>1 and not update else contextlib.nullcontext()
+            with context:
+                loss=suffix_loss(model,batch);assert torch.isfinite(loss),(epoch,step,loss)
+                (loss/group).backward()
+            loss_sum+=loss.item()
+            if update:
+                norm=torch.nn.utils.clip_grad_norm_(model.parameters(),1);assert torch.isfinite(norm)
+                optimizer.step();scheduler.step();optimizer.zero_grad(set_to_none=True);global_step+=1
+                mean=torch.tensor(loss_sum/group,device='cuda')
+                if world>1:dist.all_reduce(mean);mean/=world
+                if rank==0:
+                    event=dict(event='train',epoch=epoch,step=global_step,loss=mean.item(),lr=scheduler.get_last_lr()[0],seconds=round(time.time()-start,1))
+                    stream.write(json.dumps(event)+'\n');stream.flush()
+                    if global_step%5==0 or step==len(dl):print(json.dumps(event),flush=True)
+                loss_sum=0
+        score=evaluate(unwrapped,processor,dev,out,f'dev_epoch{epoch}',rank,world,args)
+        if score['exact_cluster_f1']>best:
+            best,best_epoch=score['exact_cluster_f1'],epoch
+            if rank==0:
+                unwrapped.save_pretrained(out/'best_adapter')
+                save_json(out/'selection.json',dict(best_epoch=epoch,best_dev_exact_cluster_f1=best,metrics=score))
+        if rank==0:unwrapped.save_pretrained(out/'last_adapter')
+        barrier(world)
+    if stream:stream.close()
+    if rank==0:save_json(out/'training_complete.json',dict(best_epoch=best_epoch,best_dev_exact_cluster_f1=best,steps=global_step,seconds=time.time()-start))
