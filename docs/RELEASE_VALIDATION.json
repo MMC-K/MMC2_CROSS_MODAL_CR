@@ -1,0 +1,44 @@
+{
+  "date_utc": "2026-11-20T01:29:55.262517+00:00",
+  "scope": "Standalone GitHub release; GPU smoke run is not the benchmark run",
+  "cpu": {
+    "train": 2500,
+    "dev": 500,
+    "test": 250,
+    "unique_images": 3980,
+    "checksums_and_decoding": true,
+    "dialogue_disjoint": true,
+    "randomized_data_reproduced_exactly": true,
+    "tests_passed": 15,
+    "published_base_predictions_rescored": 250,
+    "published_lora_predictions_rescored": 250,
+    "reported_metrics_reproduced_exactly": true
+  },
+  "model_code_function_asts_match_verified_package": true,
+  "model_download_checked_with_existing_cache": true,
+  "pinned_model_revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "gpu_smoke": {
+    "physical_gpus": [
+      1,
+      2
+    ],
+    "train": 8,
+    "dev": 4,
+    "epochs": 1,
+    "optimizer_updates": 1,
+    "nonzero_finite_lora_update": true,
+    "updated_lora_b_tensors": 196,
+    "checkpoint_reload_and_lora_evaluation": 4,
+    "base_evaluation": 4,
+    "comparison_files_generated": true,
+    "single_gpu_gold_free_inference_cases": 1,
+    "inference_json_valid": true
+  },
+  "full_three_epoch_training_repeated_for_release": false,
+  "reports": {
+    "pdf_pages": 20,
+    "pdf_and_docx_match_project_final_files": true,
+    "text_highlights": false
+  },
+  "foundation_and_adapter_weights_in_repository": false
+}

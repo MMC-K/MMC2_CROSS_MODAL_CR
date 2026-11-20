@@ -138,3 +138,18 @@ README 구성은 [기존 멀티모달 대화 상호참조 해결 저장소](http
 # Acknowledgement
 
 본 연구는 정부(과학기술정보통신부)의 재원으로 지원을 받아 수행된 연구입니다. (No. RS-2022-II220320, 상황인지 및 사용자 이해를 통한 인공지능 기반 1:1 복합대화 기술 개발)
+# 프로젝트 구성
+
+```text
+MMC2_CROSS_MODAL_CR/
+├── kommerce_coref/       # prompt, 멘션 무작위화, 모델 학습·추론·평가 지표
+├── scripts/              # 데이터 검사·다운로드·학습·평가·비교·추론
+├── data/                 # train/dev/test, 변환 전 데이터, 실제 이미지 3,980장
+├── examples/             # 정답 없는 추론 예시
+├── provenance/           # 대화 분할·ID 대응표·원래 학습 환경
+├── reference_results/    # 원래 성능표, 학습 전후 예측, epoch별 검증 기록
+├── docs/                 # 세부 실행 안내, 분석서 PDF·Word, 배포 점검 기록
+└── tests/                # CPU 지표·무작위화·데이터·기준 예측 회귀 점검
+```
+
+[재현 절차와 검증 범위](docs/REPRODUCIBILITY.md), [구성 순서에 따른 56개 커밋](docs/COMMIT_SEQUENCE.md)을 참고한다. 이 커밋 이력은 기존에 수행한 실험의 코드·데이터·문서를 프로젝트 구성 순서에 맞춰 공개용으로 정리한 이력이다.
