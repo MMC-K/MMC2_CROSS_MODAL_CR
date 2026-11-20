@@ -120,3 +120,11 @@ GPUS=1,2 RUN_DIR=outputs/run2 bash scripts/run_all.sh
 학습 후 250건 모두 유효한 JSON을 출력했다. 학습 전 JSON 파싱 실패는 29건, 잘못된 멘션 ID가 포함된 샘플은 180건이었으며 학습 후에는 두 항목 모두 0건이었다. 학습 전 exact-cluster F1이 0인 것은 부분적인 연결도 전혀 맞히지 못했다는 뜻은 아니다.
 
 [전체 결과와 해석](docs/RESULTS.md), [모델 구성](docs/MODEL_CARD.md), `reference_results/`의 실제 예측·검증 지표를 함께 제공한다. 수치는 한 seed의 기준 실험 결과이며 실행 환경에 따라 재학습 결과가 달라질 수 있다.
+
+# 성능 분석서
+
+이 프로젝트에서 작성한 조병길 연구원(KETI)의 기술문서를 함께 제공한다. 전체 대화·모델 입력과 출력·데이터 구조·지표 계산·성공 및 오류 사례를 포함한다.
+
+- [성능 분석서 PDF](docs/reports/coreference_performance_analysis_v1.pdf)
+- [성능 분석서 Word](docs/reports/coreference_performance_analysis_v1.docx)
+- [분석서와 저장소 실행 방법의 연결](docs/REPORT.md)
