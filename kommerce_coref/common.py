@@ -65,3 +65,23 @@ class Examples(Dataset):
         if self.training: assert enc['answer_length']<512, row['sample_id']
         enc['row_index'] = i
         return enc
+
+class Collate:
+    def __init__(self, pad_id): self.pad_id = pad_id
+    def __call__(self, examples):
+        length = max(len(x['input_ids']) for x in examples)
+        ids = torch.full((len(examples), length), self.pad_id, dtype=torch.long)
+        mask = torch.zeros_like(ids)
+        labels = torch.full_like(ids, -100) if 'labels' in examples[0] else None
+        for i, x in enumerate(examples):
+            n = len(x['input_ids']); ids[i, -n:] = x['input_ids']; mask[i, -n:] = 1
+            if labels is not None: labels[i, -n:] = x['labels']
+        batch = dict(input_ids=ids, attention_mask=mask)
+        for key in ['pixel_values', 'image_grid_thw']:
+            values = [x[key] for x in examples if key in x]
+            if values: batch[key] = torch.cat(values)
+        if labels is not None:
+            batch['labels'] = labels
+            batch['answer_length'] = max(x['answer_length'] for x in examples)
+        batch['row_indices'] = [x['row_index'] for x in examples]
+        return batch
