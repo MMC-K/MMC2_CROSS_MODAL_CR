@@ -70,3 +70,22 @@ GPUS=1,2 MICRO_BATCH=2 EVAL_BATCH=2 RUN_DIR=outputs/small_batch bash scripts/tra
 ```
 
 [학습 안내](docs/TRAINING.md)에 전체 설정, GPU 1개 실행, 소규모 학습 점검 명령을 정리했다.
+
+# 모델 평가
+
+학습을 마친 뒤 같은 RUN_DIR로 기반 모델과 학습된 모델을 각각 평가한다.
+
+```bash
+GPUS=1,2 RUN_DIR=outputs/run1 bash scripts/evaluate.sh base
+GPUS=1,2 RUN_DIR=outputs/run1 bash scripts/evaluate.sh lora
+python scripts/compare.py --run-dir outputs/run1
+```
+
+예측은 `base_test.jsonl`, `lora_test.jsonl`에 저장되며 성능표는 `outputs/run1/RESULTS.md`, `RESULTS.csv`, `RESULTS.json`에 저장된다. 평가 조건과 지표는 [평가 안내](docs/EVALUATION.md)를 따른다.
+
+기존 실험의 공개 예측은 GPU나 가중치 없이 다시 채점할 수 있다.
+
+```bash
+python scripts/score.py reference_results/base_test.jsonl
+python scripts/score.py reference_results/lora_test.jsonl
+```
