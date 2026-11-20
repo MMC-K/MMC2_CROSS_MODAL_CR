@@ -1,0 +1,41 @@
+{
+  "condition": "image provided in all training, validation, and test examples",
+  "candidate_representation": "independently randomized mention IDs and display order",
+  "train": 2500,
+  "dev": 500,
+  "test": 250,
+  "context_length": 16,
+  "epochs": 3,
+  "best_epoch": 3,
+  "metrics": {
+    "zero_shot": {
+      "n": 250,
+      "exact_cluster_f1": 0.0,
+      "b3_f1": 0.38501297443673826,
+      "lea_f1": 0.059434832718199514,
+      "cross_modal_link_precision": 0.18894697535474234,
+      "cross_modal_link_recall": 0.301909307875895,
+      "cross_modal_link_f1": 0.23242994947175008,
+      "valid_json": 221,
+      "empty_predictions": 29,
+      "gold_empty": 0,
+      "unknown_mention_ids": 180,
+      "token_limit_hits": 29
+    },
+    "lora": {
+      "n": 250,
+      "exact_cluster_f1": 0.9186666666666666,
+      "b3_f1": 0.9801319706822225,
+      "lea_f1": 0.9689104427736006,
+      "cross_modal_link_precision": 0.9891435464414958,
+      "cross_modal_link_recall": 0.9785202863961814,
+      "cross_modal_link_f1": 0.9838032393521297,
+      "valid_json": 250,
+      "empty_predictions": 0,
+      "gold_empty": 0,
+      "unknown_mention_ids": 0,
+      "token_limit_hits": 0
+    }
+  },
+  "exact_cluster_f1_gain": 0.9186666666666666
+}

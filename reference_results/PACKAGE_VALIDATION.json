@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-13",
+  "data_splits": {
+    "train": 2500,
+    "dev": 500,
+    "test": 250
+  },
+  "images": 3980,
+  "data_checksum_and_image_decode_verified": true,
+  "data_preparation_reproduces_exact_bundled_jsonl": true,
+  "original_project_imports_not_required": true,
+  "pinned_hf_revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "download_script_resolves_model_from_hf": true,
+  "download_test_used_existing_weight_cache": true,
+  "fresh_isolated_environment_installed": true,
+  "fresh_environment_base_evaluation_cases": 250,
+  "base_predictions_match_original": true,
+  "trained_adapter_replay_cases": 250,
+  "trained_predictions_match_original": true,
+  "training_smoke": {
+    "train": 8,
+    "dev": 4,
+    "epochs": 1,
+    "optimizer_steps": 1,
+    "nonzero_finite_lora_update": true,
+    "checkpoint_reload_and_evaluate_cases": 4
+  },
+  "single_gpu_gold_free_inference_verified": true,
+  "full_training_not_repeated_for_packaging": true,
+  "physical_gpus_used_for_validation": [
+    1,
+    2
+  ],
+  "foundation_and_adapter_weights_in_archive": false
+}
