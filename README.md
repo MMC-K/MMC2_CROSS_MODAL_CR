@@ -89,3 +89,13 @@ python scripts/compare.py --run-dir outputs/run1
 python scripts/score.py reference_results/base_test.jsonl
 python scripts/score.py reference_results/lora_test.jsonl
 ```
+
+# 모델 추론
+
+학습한 adapter로 정답 없는 예제의 군집을 생성한다.
+
+```bash
+GPUS=1,2 RUN_DIR=outputs/run1 bash scripts/infer.sh
+```
+
+예측은 `outputs/run1/inference/predictions.jsonl`에 저장된다. 사용자 대화·이미지를 입력하는 방법은 [추론 안내](docs/INFERENCE.md)에 있다.
