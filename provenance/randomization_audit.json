@@ -1,0 +1,52 @@
+{
+  "seed": 42,
+  "splits": {
+    "train": {
+      "samples": 2500,
+      "before": {
+        "gold_clusters": 3110,
+        "contiguous_numeric_ids": 3110,
+        "adjacent_display_positions": 3110,
+        "highest_numeric_id_is_image": 3073
+      },
+      "after": {
+        "gold_clusters": 3110,
+        "contiguous_numeric_ids": 125,
+        "adjacent_display_positions": 129,
+        "highest_numeric_id_is_image": 965
+      }
+    },
+    "dev": {
+      "samples": 500,
+      "before": {
+        "gold_clusters": 622,
+        "contiguous_numeric_ids": 622,
+        "adjacent_display_positions": 622,
+        "highest_numeric_id_is_image": 610
+      },
+      "after": {
+        "gold_clusters": 622,
+        "contiguous_numeric_ids": 18,
+        "adjacent_display_positions": 19,
+        "highest_numeric_id_is_image": 199
+      }
+    },
+    "test": {
+      "samples": 250,
+      "before": {
+        "gold_clusters": 306,
+        "contiguous_numeric_ids": 306,
+        "adjacent_display_positions": 306,
+        "highest_numeric_id_is_image": 303
+      },
+      "after": {
+        "gold_clusters": 306,
+        "contiguous_numeric_ids": 15,
+        "adjacent_display_positions": 9,
+        "highest_numeric_id_is_image": 96
+      }
+    }
+  },
+  "semantic_equivalence_verified": true,
+  "source_files_unchanged": true
+}
