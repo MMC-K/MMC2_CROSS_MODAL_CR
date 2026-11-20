@@ -1,0 +1,14 @@
+{
+  "n": 500,
+  "exact_cluster_f1": 0.9103333333333332,
+  "b3_f1": 0.9754217131372217,
+  "lea_f1": 0.960053914482798,
+  "cross_modal_link_precision": 0.9837153196622437,
+  "cross_modal_link_recall": 0.9743130227001194,
+  "cross_modal_link_f1": 0.9789915966386555,
+  "valid_json": 500,
+  "empty_predictions": 0,
+  "gold_empty": 0,
+  "unknown_mention_ids": 3,
+  "token_limit_hits": 0
+}

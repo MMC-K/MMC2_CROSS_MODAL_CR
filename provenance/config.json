@@ -1,0 +1,43 @@
+{
+  "model": "Qwen/Qwen3-VL-2B-Instruct",
+  "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "physical_gpus": [
+    1,
+    2
+  ],
+  "seed": 42,
+  "dropout_seeds": [
+    42,
+    43
+  ],
+  "training_samples": 2500,
+  "validation_samples": 500,
+  "test_samples": 250,
+  "context_length": 16,
+  "epochs": 3,
+  "micro_batch_per_gpu": 16,
+  "gradient_accumulation": 1,
+  "effective_batch_size": 32,
+  "steps_per_epoch": 79,
+  "lr": 0.0001,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.03,
+  "scheduler": "cosine",
+  "max_grad_norm": 1,
+  "lora_rank": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "vision_encoder": "frozen",
+  "visual_merger": "frozen",
+  "trainable_parameters": 17432576,
+  "min_pixels": 65536,
+  "max_pixels": 262144,
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens": 512
+  },
+  "selection": "highest dev exact-cluster F1; earliest epoch on ties",
+  "gradient_checkpointing": true,
+  "loss": "answer JSON and EOS only; cross-entropy averaged over supervised tokens",
+  "prompt": "unchanged templates.TEMPLATES[coreference]; gold is existing strict Text+Image clusters"
+}
