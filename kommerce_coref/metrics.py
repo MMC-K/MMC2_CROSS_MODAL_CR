@@ -89,3 +89,12 @@ def lea_f1(pred, gold):
     R = _lea_recall(vg, vp)
     P = _lea_recall(vp, vg)
     return 2 * P * R / (P + R) if P + R else 0.0
+
+def parse(response):
+    try:
+        start,end=response.find('{'),response.rfind('}')
+        assert start>=0 and end>start
+        obj=json.loads(response[start:end+1]); clusters=obj['clusters']
+        valid=isinstance(clusters,list) and all(isinstance(c,list) and all(isinstance(m,str) for m in c) for c in clusters)
+        return (clusters,True) if valid else ([],False)
+    except (ValueError,TypeError,KeyError,AssertionError):return [],False
