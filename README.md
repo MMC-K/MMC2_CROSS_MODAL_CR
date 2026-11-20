@@ -99,3 +99,11 @@ GPUS=1,2 RUN_DIR=outputs/run1 bash scripts/infer.sh
 ```
 
 예측은 `outputs/run1/inference/predictions.jsonl`에 저장된다. 사용자 대화·이미지를 입력하는 방법은 [추론 안내](docs/INFERENCE.md)에 있다.
+
+# 학습부터 평가까지 한 번에 실행
+
+```bash
+GPUS=1,2 RUN_DIR=outputs/run2 bash scripts/run_all.sh
+```
+
+데이터 검사 → 기반 모델 다운로드 → 학습·검증 → 학습 전후 평가 → 성능표 생성을 순서대로 수행한다.
