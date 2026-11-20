@@ -85,3 +85,12 @@ class Collate:
             batch['answer_length'] = max(x['answer_length'] for x in examples)
         batch['row_indices'] = [x['row_index'] for x in examples]
         return batch
+
+def cuda_batch(batch):
+    return {k: v.to('cuda', non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
+
+@torch.autocast('cuda', dtype=torch.bfloat16)
+def suffix_loss(model, batch):
+    labels = batch.pop('labels'); n = batch.pop('answer_length')
+    output = model(**batch, use_cache=False, logits_to_keep=n+1)
+    return torch.nn.functional.cross_entropy(output.logits[:, :-1].float().reshape(-1, output.logits.shape[-1]), labels[:, -n:].reshape(-1))
